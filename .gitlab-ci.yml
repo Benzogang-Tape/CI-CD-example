@@ -1,0 +1,65 @@
+stages:
+  - checks
+  - deploy
+
+lint:
+  image: golangci/golangci-lint:v1.61
+  stage: checks
+  script:
+    - echo "Running linters"
+    - make lint
+
+test:
+  image: golang:1.23.3
+  stage: checks
+  script:
+    - echo "Testing"
+    - make test
+
+
+build:
+  image: golang:1.23.3
+  stage: checks
+  script:
+    - echo "Building the app"
+    - make build
+    - make clean
+
+.prepare_ssh:
+  before_script:
+    ## Install ssh-agent if not already installed, it is required by Docker.
+    ## (change apt-get to yum if you use an RPM-based image)
+    - "command -v ssh-agent >/dev/null || ( apt-get update -y && apt-get install openssh-client -y )"
+
+    ## Run ssh-agent (inside the build environment)
+    - eval $(ssh-agent -s)
+    ## Add the SSH key stored in SSH_PRIVATE_KEY file to the agent store
+    - cat $SSH_PRIVATE_KEY | tr -d '\r' | ssh-add -
+
+    ## Create the SSH directory and give it the right permissions
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan -t rsa $REAL_IP >> ~/.ssh/known_hosts
+    - docker login --username benzogangtape --password $DOCKER_TOKEN
+
+deploy:
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+  extends: .prepare_ssh
+  image: docker
+  services:
+    - docker:dind
+  stage: deploy
+  script:
+    - docker build -t benzogangtape/hw_9:latest .
+    - docker push benzogangtape/hw_9:latest
+    - ssh ubuntu@$REAL_IP 'sudo docker stop obsidian_killer || echo 1'
+    - ssh ubuntu@$REAL_IP 'sudo docker rm obsidian_killer || echo 1'
+    - ssh ubuntu@$REAL_IP 'sudo docker pull benzogangtape/hw_9:latest'
+    - ssh ubuntu@$REAL_IP 'sudo docker run --rm -d -p 8080:8080 --name=obsidian_killer benzogangtape/hw_9:latest'
+  environment:
+    name: production
+    url: http://$REAL_IP
+  only:
+    - master
+    - main

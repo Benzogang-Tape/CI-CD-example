@@ -1,0 +1,103 @@
+linters:
+  disable-all: true
+  enable:
+    #   default
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    #   custom
+    - bodyclose
+    - dupl
+    - goconst
+    - gocritic
+    - gocyclo
+    - nakedret
+    - gocognit
+    - funlen
+    - prealloc
+    - revive
+    - unconvert
+    - unparam
+    - sqlclosecheck
+    - gofmt
+    - goimports
+    - nilnil
+    - testifylint
+    - gosec
+    - lll
+  fast: false
+
+linters-settings:
+  errcheck:
+    check-blank: true
+  govet:
+    enable:
+      - shadow
+  revive:
+    confidence: 0.3
+  unused:
+    post-statements-are-reads: true
+  dupl:
+    threshold: 100
+  goconst:
+    numbers: true
+  gocyclo:
+    min-complexity: 20
+  nakedret:
+    max-func-lines: 50
+  gocognit:
+    min-complexity: 20
+  funlen:
+    lines: 80
+    statements: 50
+  prealloc:
+    for-loops: true
+  unconvert:
+    fast-math: true
+  unparam:
+    check-exported: true
+  gofmt:
+    rewrite-rules:
+      - pattern: 'interface{}'
+        replacement: 'any'
+      - pattern: 'a[b:len(a)]'
+        replacement: 'a[b:]'
+  goimports:
+    local-prefixes: github.com/Benzogang-Tape/CI-CD-example
+  nilnil:
+    detect-opposite: true
+  gosec:
+    excludes:
+      - G115
+    severity: high
+  lll:
+    line-length: 120
+    tab-width: 4
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  exclude:
+    - "should have comment"
+    - "always receives"
+    - "parameter .* is always"
+    - "comment on exported .* should be of the form"
+  exclude-rules:
+    - linters:
+        - lll
+      source: "^//go:generate "
+
+output:
+  formats:
+    - format: colored-line-number
+      path: stdout
+  show-stats: true
+
+run:
+  timeout: 2m
+  issues-exit-code: 1
+  tests: true
+  go: '1.23'
